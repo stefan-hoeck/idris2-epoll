@@ -7,7 +7,7 @@ import Derive.Prelude
 %language ElabReflection
 
 --------------------------------------------------------------------------------
--- FFI
+-- Errors
 --------------------------------------------------------------------------------
 
 export %foreign "C:ep_eagain,epoll-idris"
@@ -23,5 +23,32 @@ export
 Interpolation EpollErr where interpolate = show
 
 export
-code : EpollErr -> Int32
-code EAGAIN = eagain
+errCode : EpollErr -> Int32
+errCode EAGAIN = eagain
+
+--------------------------------------------------------------------------------
+-- Operations
+--------------------------------------------------------------------------------
+
+export %foreign "C:ep_epoll_ctl_add,epoll-idris"
+epoll_ctl_add : Int32
+
+export %foreign "C:ep_epoll_ctl_mod,epoll-idris"
+epoll_ctl_mod : Int32
+
+export %foreign "C:ep_epoll_ctl_del,epoll-idris"
+epoll_ctl_del : Int32
+
+public export
+data EpollCtl = Add | Mod | Del
+
+%runElab derive "EpollCtl" [Show,Eq,Finite]
+
+export
+Interpolation EpollCtl where interpolate = show
+
+export
+ctlCode : EpollCtl -> Int32
+ctlCode Add = epoll_ctl_add
+ctlCode Mod = epoll_ctl_mod
+ctlCode Del = epoll_ctl_del

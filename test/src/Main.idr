@@ -5,9 +5,13 @@ import System.Epoll
 
 %default total
 
-printErr : EpollErr -> IO ()
-printErr e = putStrLn "\{e} (code: \{show $ code e})"
+printItm : Interpolation a => (a -> Int32) -> a -> IO ()
+printItm code e = putStrLn "  \{e} (code: \{show $ code e})"
 
 main : IO ()
 main = do
-  traverse_ printErr values
+  putStrLn "Errors:"
+  traverse_ (printItm errCode) values
+
+  putStrLn "\nOperations:"
+  traverse_ (printItm ctlCode) values

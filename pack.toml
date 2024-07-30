@@ -1,0 +1,5 @@
+[custom.all.epoll]
+type   = "local"
+path   = "."
+ipkg   = "epoll.ipkg"
+test   = "test/test.ipkg"

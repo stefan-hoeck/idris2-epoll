@@ -1,0 +1,13 @@
+package epoll-test
+version      = 0.0.1
+authors      = "stefan-hoeck"
+license      = "BSD-3 Clause"
+langversion >= 0.7.0
+
+depends = epoll
+
+sourcedir = "src"
+
+main = Main
+
+executable = "epoll-test"

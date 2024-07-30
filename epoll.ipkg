@@ -1,0 +1,19 @@
+package epoll
+version      = 0.0.1
+authors      = "stefan-hoeck"
+readme       = "README.md"
+license      = "BSD-3 Clause"
+brief        = "epoll bindings in Idris2: polling pipes and sockets in Linux"
+langversion >= 0.7.0
+
+depends = base >= 0.7.0
+        , elab-util
+        , finite
+
+sourcedir = "src"
+
+modules = System.Epoll
+
+prebuild = "make -C support"
+
+preinstall = "make -C support install"

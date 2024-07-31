@@ -67,6 +67,9 @@ errCode ENOMEM = enomem
 errCode ENOSPC = enospc
 errCode EPERM  = eperm
 
+export
+fromCode : Bits32 -> EpollErr
+
 --------------------------------------------------------------------------------
 -- Operations
 --------------------------------------------------------------------------------
@@ -81,18 +84,18 @@ export %foreign "C:ep_epoll_ctl_del,epoll-idris"
 epoll_ctl_del : Bits32
 
 public export
-data EpollCtl = Add | Mod | Del
+data EpollOp = Add | Mod | Del
 
-%runElab derive "EpollCtl" [Show,Eq,Finite]
-
-export
-Interpolation EpollCtl where interpolate = show
+%runElab derive "EpollOp" [Show,Eq,Finite]
 
 export
-ctlCode : EpollCtl -> Bits32
-ctlCode Add = epoll_ctl_add
-ctlCode Mod = epoll_ctl_mod
-ctlCode Del = epoll_ctl_del
+Interpolation EpollOp where interpolate = show
+
+export
+opCode : EpollOp -> Bits32
+opCode Add = epoll_ctl_add
+opCode Mod = epoll_ctl_mod
+opCode Del = epoll_ctl_del
 
 --------------------------------------------------------------------------------
 -- Event
@@ -201,3 +204,51 @@ EPOLLWAKEUP = F epollwakeup
 export %inline
 EPOLLEXCLUSIVE : Flag
 EPOLLEXCLUSIVE = F epollexclusive
+
+--------------------------------------------------------------------------------
+-- epoll utilities
+--------------------------------------------------------------------------------
+
+%foreign  "C:close,epoll-idris"
+prim__close : Bits32 -> PrimIO ()
+
+%foreign  "C:epoll_ctl,epoll-idris"
+prim__epoll_ctl : Bits32 -> Bits32 -> Bits32 -> AnyPtr -> PrimIO Bits32
+
+%foreign  "C:epoll_wait,epoll-idris"
+prim__epoll_wait : Bits32 -> AnyPtr -> Bits32 -> Int32 -> PrimIO Bits32
+
+%foreign  "C:epoll_create1,epoll-idris"
+prim__epoll_create1 : Bits32 -> PrimIO Int32
+
+%foreign  "C:epoll_errno,epoll-idris"
+prim__errno : PrimIO Bits32
+
+public export
+record FileDesc where
+  constructor FD
+  file : Bits32
+
+export
+record EpollEvent where
+  constructor EE
+  ptr : AnyPtr
+
+export
+record EpollFD where
+  constructor EFD
+  fileDesc : Bits32
+
+export %inline
+epollCtl : EpollFD -> EpollOp -> FileDesc -> EpollEvent -> IO Bits32
+epollCtl (EFD ef) o (FD f) (EE p) = fromPrim $ prim__epoll_ctl ef (opCode o) f p
+
+export %inline
+epollCreate : IO (Either EpollErr EpollFD)
+epollCreate =
+  fromPrim $ \w =>
+    let MkIORes res w := prim__epoll_create1 0 w
+     in case res of
+          -1 => let MkIORes c w := prim__errno w
+                 in MkIORes (Left $ fromCode c) w
+          n  => MkIORes (Right $ EFD $ cast n) w

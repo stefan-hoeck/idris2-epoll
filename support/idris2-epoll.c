@@ -10,6 +10,38 @@ int ep_eagain() {
   return EAGAIN;
 }
 
+int ep_ebadf() {
+  return EBADF;
+}
+
+int ep_eexist() {
+  return EEXIST;
+}
+
+int ep_einval() {
+  return EINVAL;
+}
+
+int ep_eloop() {
+  return ELOOP;
+}
+
+int ep_enoent() {
+  return ENOENT;
+}
+
+int ep_enomem() {
+  return ENOMEM;
+}
+
+int ep_enospc() {
+  return ENOSPC;
+}
+
+int ep_eperm() {
+  return EPERM;
+}
+
 //
 // Operations
 //
@@ -52,4 +84,24 @@ int ep_epollerr() {
 
 int ep_epollhup() {
   return EPOLLHUP;
+}
+
+//
+// Flags
+//
+
+int ep_epollet() {
+  return EPOLLET;
+}
+
+int ep_epolloneshot() {
+  return EPOLLONESHOT;
+}
+
+int ep_epollwakeup() {
+  return EPOLLWAKEUP;
+}
+
+int ep_epollexclusive() {
+  return EPOLLEXCLUSIVE;
 }

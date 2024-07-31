@@ -5,7 +5,7 @@ import System.Epoll
 
 %default total
 
-printItm : Show a => (a -> Int32) -> a -> IO ()
+printItm : Show a => (a -> Bits32) -> a -> IO ()
 printItm code e = putStrLn "  \{show e} (code: \{show $ code e})"
 
 main : IO ()
@@ -19,3 +19,7 @@ main = do
   putStrLn "\nEvents:"
   traverse_ (printItm eventCode)
     [EPOLLIN,EPOLLOUT,EPOLLRDHUP,EPOLLPRI,EPOLLERR,EPOLLHUP]
+
+  putStrLn "\nFlags:"
+  traverse_ (printItm flagCode)
+    [EPOLLET,EPOLLONESHOT,EPOLLWAKEUP,EPOLLEXCLUSIVE]

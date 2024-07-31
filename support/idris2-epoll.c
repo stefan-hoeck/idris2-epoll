@@ -25,3 +25,31 @@ int ep_epoll_ctl_mod() {
 int ep_epoll_ctl_del() {
   return EPOLL_CTL_DEL;
 }
+
+//
+// Events
+//
+
+int ep_epollin() {
+  return EPOLLIN;
+}
+
+int ep_epollout() {
+  return EPOLLOUT;
+}
+
+int ep_epollrdhup() {
+  return EPOLLRDHUP;
+}
+
+int ep_epollpri() {
+  return EPOLLPRI;
+}
+
+int ep_epollerr() {
+  return EPOLLERR;
+}
+
+int ep_epollhup() {
+  return EPOLLHUP;
+}

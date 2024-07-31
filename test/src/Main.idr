@@ -5,8 +5,8 @@ import System.Epoll
 
 %default total
 
-printItm : Interpolation a => (a -> Int32) -> a -> IO ()
-printItm code e = putStrLn "  \{e} (code: \{show $ code e})"
+printItm : Show a => (a -> Int32) -> a -> IO ()
+printItm code e = putStrLn "  \{show e} (code: \{show $ code e})"
 
 main : IO ()
 main = do
@@ -15,3 +15,7 @@ main = do
 
   putStrLn "\nOperations:"
   traverse_ (printItm ctlCode) values
+
+  putStrLn "\nEvents:"
+  traverse_ (printItm eventCode)
+    [EPOLLIN,EPOLLOUT,EPOLLRDHUP,EPOLLPRI,EPOLLERR,EPOLLHUP]

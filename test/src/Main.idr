@@ -14,7 +14,7 @@ main = do
   traverse_ (printItm errCode) values
 
   putStrLn "\nOperations:"
-  traverse_ (printItm ctlCode) values
+  traverse_ (printItm opCode) values
 
   putStrLn "\nEvents:"
   traverse_ (printItm eventCode)

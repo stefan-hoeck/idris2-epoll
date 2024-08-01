@@ -1,8 +1,10 @@
 module System.Epoll
 
 import Data.Bits
+import Data.Nat
 import Derive.Finite
 import Derive.Prelude
+import System.FFI
 
 %default total
 %language ElabReflection
@@ -69,6 +71,16 @@ errCode EPERM  = eperm
 
 export
 fromCode : Bits32 -> EpollErr
+fromCode x =
+  if      x == eagain then EAGAIN
+  else if x == ebadf  then EBADF
+  else if x == eexist then EEXIST
+  else if x == eloop  then ELOOP
+  else if x == enoent then ENOENT
+  else if x == enomem then ENOMEM
+  else if x == enospc then ENOSPC
+  else if x == eperm  then EPERM
+  else EINVAL
 
 --------------------------------------------------------------------------------
 -- Operations
@@ -221,8 +233,23 @@ prim__epoll_wait : Bits32 -> AnyPtr -> Bits32 -> Int32 -> PrimIO Bits32
 %foreign  "C:epoll_create1,epoll-idris"
 prim__epoll_create1 : Bits32 -> PrimIO Int32
 
-%foreign  "C:epoll_errno,epoll-idris"
+%foreign  "C:ep_errno,epoll-idris"
 prim__errno : PrimIO Bits32
+
+%foreign  "C:ep_allocEvents,epoll-idris"
+prim__ep_allocEvent : Bits32 -> PrimIO AnyPtr
+
+%foreign  "C:ep_setEvent,epoll-idris"
+prim__ep_setEvent : AnyPtr -> Bits32 -> PrimIO ()
+
+%foreign  "C:ep_setFile,epoll-idris"
+prim__ep_setFile : AnyPtr -> Bits32 -> PrimIO ()
+
+%foreign  "C:ep_getFile,epoll-idris"
+prim__ep_getFile : AnyPtr -> PrimIO Bits32
+
+%foreign  "C:ep_eventAt,epoll-idris"
+prim__ep_eventAt : AnyPtr -> Bits32 -> PrimIO AnyPtr
 
 public export
 record FileDesc where
@@ -232,6 +259,11 @@ record FileDesc where
 export
 record EpollEvent where
   constructor EE
+  ptr : AnyPtr
+
+export
+record EpollEvents (n : Nat) where
+  constructor EES
   ptr : AnyPtr
 
 export
@@ -252,3 +284,45 @@ epollCreate =
           -1 => let MkIORes c w := prim__errno w
                  in MkIORes (Left $ fromCode c) w
           n  => MkIORes (Right $ EFD $ cast n) w
+
+export %inline
+allocEvent : IO EpollEvent
+allocEvent =
+  fromPrim $ \w =>
+    let MkIORes ev w := prim__ep_allocEvent 1 w
+     in MkIORes (EE ev) w
+
+export %inline
+allocEvents : (n : Nat) -> IO (EpollEvents n)
+allocEvents n =
+  fromPrim $ \w =>
+    let MkIORes ev w := prim__ep_allocEvent (cast n) w
+     in MkIORes (EES ev) w
+
+export %inline
+freeEvent : EpollEvent -> IO ()
+freeEvent (EE ev) = free ev
+
+export %inline
+freeEvents : EpollEvents n -> IO ()
+freeEvents (EES ev) = free ev
+
+export %inline
+epollWaitTimeout :
+     {n : Nat}
+  -> EpollFD
+  -> EpollEvents n
+  -> {auto 0 prf : IsSucc n}
+  -> (ms : Bits32)
+  -> IO Bits32
+epollWaitTimeout (EFD f) (EES p) ms =
+  fromPrim $ prim__epoll_wait f p (cast n) (cast ms)
+
+export %inline
+epollNoWait :
+     {n : Nat}
+  -> EpollFD
+  -> EpollEvents n
+  -> {auto 0 prf : IsSucc n}
+  -> IO Bits32
+epollNoWait (EFD f) (EES p) = fromPrim $ prim__epoll_wait f p (cast n) 0

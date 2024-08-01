@@ -12,7 +12,7 @@ depends = base >= 0.7.0
 
 sourcedir = "src"
 
-modules = System.Epoll
+modules = System.Linux.Epoll
 
 prebuild = "make -C support"
 

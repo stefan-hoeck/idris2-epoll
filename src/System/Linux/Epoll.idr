@@ -1,4 +1,4 @@
-module System.Epoll
+module System.Linux.Epoll
 
 import Data.Bits
 import Data.Nat

@@ -1,7 +1,7 @@
 module Main
 
 import Data.Finite
-import System.Epoll
+import System.Linux.Epoll
 
 %default total
 

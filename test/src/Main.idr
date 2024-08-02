@@ -1,7 +1,9 @@
 module Main
 
 import Data.Finite
-import System.Epoll
+import System.Linux.Epoll
+import EventFD
+import Hedgehog
 
 %default total
 
@@ -14,7 +16,7 @@ main = do
   traverse_ (printItm errCode) values
 
   putStrLn "\nOperations:"
-  traverse_ (printItm ctlCode) values
+  traverse_ (printItm opCode) values
 
   putStrLn "\nEvents:"
   traverse_ (printItm eventCode)
@@ -23,3 +25,7 @@ main = do
   putStrLn "\nFlags:"
   traverse_ (printItm flagCode)
     [EPOLLET,EPOLLONESHOT,EPOLLWAKEUP,EPOLLEXCLUSIVE]
+
+  test
+    [ EventFD.props
+    ]

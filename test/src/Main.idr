@@ -2,6 +2,8 @@ module Main
 
 import Data.Finite
 import System.Linux.Epoll
+import EventFD
+import Hedgehog
 
 %default total
 
@@ -23,3 +25,7 @@ main = do
   putStrLn "\nFlags:"
   traverse_ (printItm flagCode)
     [EPOLLET,EPOLLONESHOT,EPOLLWAKEUP,EPOLLEXCLUSIVE]
+
+  test
+    [ EventFD.props
+    ]

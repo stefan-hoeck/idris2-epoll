@@ -4,83 +4,11 @@ import Data.Bits
 import Data.Nat
 import Derive.Finite
 import Derive.Prelude
+import public System.Linux.Error
 import System.FFI
 
 %default total
 %language ElabReflection
-
---------------------------------------------------------------------------------
--- Errors
---------------------------------------------------------------------------------
-
-export %foreign "C:ep_eagain,epoll-idris"
-eagain : Bits32
-
-export %foreign "C:ep_ebadf,epoll-idris"
-ebadf : Bits32
-
-export %foreign "C:ep_eexist,epoll-idris"
-eexist : Bits32
-
-export %foreign "C:ep_einval,epoll-idris"
-einval : Bits32
-
-export %foreign "C:ep_eloop,epoll-idris"
-eloop : Bits32
-
-export %foreign "C:ep_enoent,epoll-idris"
-enoent : Bits32
-
-export %foreign "C:ep_enomem,epoll-idris"
-enomem : Bits32
-
-export %foreign "C:ep_enospc,epoll-idris"
-enospc : Bits32
-
-export %foreign "C:ep_eperm,epoll-idris"
-eperm : Bits32
-
-public export
-data EpollErr : Type where
-  EAGAIN : EpollErr
-  EBADF  : EpollErr
-  EEXIST : EpollErr
-  EINVAL : EpollErr
-  ELOOP  : EpollErr
-  ENOENT : EpollErr
-  ENOMEM : EpollErr
-  ENOSPC : EpollErr
-  EPERM  : EpollErr
-
-%runElab derive "EpollErr" [Show,Eq,Finite]
-
-export
-Interpolation EpollErr where interpolate = show
-
-export
-errCode : EpollErr -> Bits32
-errCode EAGAIN = eagain
-errCode EBADF  = ebadf
-errCode EEXIST = eexist
-errCode EINVAL = einval
-errCode ELOOP  = eloop
-errCode ENOENT = enoent
-errCode ENOMEM = enomem
-errCode ENOSPC = enospc
-errCode EPERM  = eperm
-
-export
-fromCode : Bits32 -> EpollErr
-fromCode x =
-  if      x == eagain then EAGAIN
-  else if x == ebadf  then EBADF
-  else if x == eexist then EEXIST
-  else if x == eloop  then ELOOP
-  else if x == enoent then ENOENT
-  else if x == enomem then ENOMEM
-  else if x == enospc then ENOSPC
-  else if x == eperm  then EPERM
-  else EINVAL
 
 --------------------------------------------------------------------------------
 -- Operations
@@ -233,9 +161,6 @@ prim__epoll_wait : Bits32 -> AnyPtr -> Bits32 -> Int32 -> PrimIO Bits32
 %foreign  "C:epoll_create1,epoll-idris"
 prim__epoll_create1 : Bits32 -> PrimIO Int32
 
-%foreign  "C:ep_errno,epoll-idris"
-prim__errno : PrimIO Bits32
-
 %foreign  "C:ep_allocEvents,epoll-idris"
 prim__ep_allocEvent : Bits32 -> PrimIO AnyPtr
 
@@ -281,8 +206,7 @@ epollCreate =
   fromPrim $ \w =>
     let MkIORes res w := prim__epoll_create1 0 w
      in case res of
-          -1 => let MkIORes c w := prim__errno w
-                 in MkIORes (Left $ fromCode c) w
+          -1 => getErr w
           n  => MkIORes (Right $ EFD $ cast n) w
 
 export %inline

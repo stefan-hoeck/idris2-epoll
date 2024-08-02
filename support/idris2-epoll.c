@@ -154,10 +154,16 @@ int ep_efd_semaphore() {
     return EFD_SEMAPHORE;
 }
 
-ssize_t ep_readEventFile (int efd, uint64_t *val) {
-  return read(efd, val, 8);
+uint64_t ep_readEventFile (int efd) {
+  uint64_t res = 0;
+  ssize_t sz = read(efd, &res, 8);
+  if (sz <= 0) {
+    return 0;
+  } else {
+    return res;
+  }
 }
 
-ssize_t ep_writeEventFile (int efd, uint64_t *val) {
-  return write(efd, val, 8);
+ssize_t ep_writeEventFile (int efd, uint64_t val) {
+  return write(efd, &val, 8);
 }

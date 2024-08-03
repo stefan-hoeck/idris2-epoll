@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <sys/epoll.h>
 #include <sys/eventfd.h>
+#include <sys/timerfd.h>
 #include <unistd.h>
 
 //
@@ -166,4 +167,53 @@ uint64_t ep_readEventFile (int efd) {
 
 ssize_t ep_writeEventFile (int efd, uint64_t val) {
   return write(efd, &val, 8);
+}
+
+//
+// Timer Files
+//
+
+int ep_clock_readltime () {
+  return CLOCK_REALTIME;
+}
+
+int ep_clock_monotonic () {
+  return CLOCK_MONOTONIC;
+}
+
+int ep_clock_boottime () {
+  return CLOCK_BOOTTIME;
+}
+
+int ep_clock_realtime_alarm () {
+  return CLOCK_REALTIME_ALARM;
+}
+
+int ep_clock_boottime_alarm () {
+  return CLOCK_BOOTTIME_ALARM;
+}
+
+int ep_tfd_cloexec() {
+    return TFD_CLOEXEC;
+}
+
+int ep_tfd_nonblock() {
+    return TFD_NONBLOCK;
+}
+
+uint64_t ep_readTimer (int tfd) {
+  uint64_t res = 0;
+  ssize_t sz = read(tfd, &res, 8);
+  if (sz <= 0) {
+    return 0;
+  } else {
+    return res;
+  }
+}
+
+void *ep_setTime (int tfd, time_t secs, uint32_t nanos) {
+    struct itimerspec spec;
+    spec.it_value.tv_sec = secs;
+    spec.it_value.tv_nsec = nanos;
+    timerfd_settime(tfd, 0, &spec, NULL);
 }

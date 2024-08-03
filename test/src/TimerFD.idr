@@ -18,6 +18,11 @@ readBlockingRes dur = justRead dur neutral
 readNonblockingRes : Clock Duration -> Either EpollErr Bits64
 readNonblockingRes dur = justRead dur TFD_NONBLOCK
 
+readNonblockingAfterwait : Clock Duration -> Either EpollErr Bits64
+readNonblockingAfterwait dur =
+  runPrim $ \w =>
+    let
+
 prop_readBlocking : Property
 prop_readBlocking =
   property $ do

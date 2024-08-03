@@ -23,6 +23,7 @@ epoll_ctl_mod : Bits32
 export %foreign "C:ep_epoll_ctl_del,epoll-idris"
 epoll_ctl_del : Bits32
 
+||| epoll operation tags for adding, modifying, and deleting file descriptors.
 public export
 data EpollOp = Add | Mod | Del
 
@@ -38,7 +39,7 @@ opCode Mod = epoll_ctl_mod
 opCode Del = epoll_ctl_del
 
 --------------------------------------------------------------------------------
--- Event
+-- Events
 --------------------------------------------------------------------------------
 
 export %foreign "C:ep_epollin,epoll-idris"
@@ -59,43 +60,52 @@ epollerr : Bits32
 export %foreign "C:ep_epollhup,epoll-idris"
 epollhup : Bits32
 
+||| Type of event epoll can wait for.
+|||
+||| For every file descriptor observed by epoll a
+||| combination of events can be watched for. Events
+||| can be combined via `(<+>)`.
 export
-record Event where
+record Events where
   constructor E
   value : Bits32
 
-%runElab derive "Event" [Show,Eq,Ord]
+%runElab derive "Events" [Show,Eq,Ord]
 
 export %inline
-eventCode : Event -> Bits32
+eventCode : Events -> Bits32
 eventCode = value
 
 export %inline
-Semigroup Event where
+Semigroup Events where
   E x <+> E y = E (x .|. y)
 
+||| Event for observing if a file is ready for input, that is,
+||| `read` invoked with that file will not block.
 export %inline
-EPOLLIN : Event
+EPOLLIN : Events
 EPOLLIN = E epollin
 
+||| Event for observing if a file is ready for output, that is,
+||| `write` invoked with that file will not block.
 export %inline
-EPOLLOUT : Event
+EPOLLOUT : Events
 EPOLLOUT = E epollout
 
 export %inline
-EPOLLRDHUP : Event
+EPOLLRDHUP : Events
 EPOLLRDHUP = E epollrdhup
 
 export %inline
-EPOLLPRI : Event
+EPOLLPRI : Events
 EPOLLPRI = E epollpri
 
 export %inline
-EPOLLERR : Event
+EPOLLERR : Events
 EPOLLERR = E epollerr
 
 export %inline
-EPOLLHUP : Event
+EPOLLHUP : Events
 EPOLLHUP = E epollhup
 
 --------------------------------------------------------------------------------

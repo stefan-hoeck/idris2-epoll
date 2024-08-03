@@ -213,6 +213,8 @@ uint64_t ep_readTimer (int tfd) {
 
 void *ep_setTime (int tfd, time_t secs, uint32_t nanos) {
     struct itimerspec spec;
+    spec.it_interval.tv_sec = 0;
+    spec.it_interval.tv_nsec = 0;
     spec.it_value.tv_sec = secs;
     spec.it_value.tv_nsec = nanos;
     timerfd_settime(tfd, 0, &spec, NULL);

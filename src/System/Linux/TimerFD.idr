@@ -5,7 +5,7 @@ import Derive.Finite
 import Derive.Prelude
 import System.Linux.Error
 import System.Linux.File
-import System.Clock
+import public System.Clock
 
 %default total
 %language ElabReflection
@@ -110,8 +110,8 @@ record TimerFD where
 
 ||| Creates a new `TimerFD` with the given initial value a flags set.
 export %inline
-timerFdCreate : ClockTpe -> Flags -> PrimIO TimerFD
-timerFdCreate c (F f) w =
+timerCreate : ClockTpe -> Flags -> PrimIO TimerFD
+timerCreate c (F f) w =
   let MkIORes file w := prim__timerfd_create (clockCode c) f w
    in MkIORes (TFD file) w
 
@@ -119,7 +119,7 @@ timerFdCreate c (F f) w =
 ||| number of times the timer has expired since the last read.
 |||
 ||| This will block the calling thread unless the `TFD_NONBLOCK` flag
-||| was set
+||| was set.
 export %inline
 readTimer : TimerFD -> PrimIO (Either EpollErr Bits64)
 readTimer (TFD f) w =
@@ -132,3 +132,52 @@ export %inline
 setTime : TimerFD -> Clock Duration -> PrimIO ()
 setTime (TFD f) c =
   prim__ep_setTime f (cast $ seconds c) (cast $ nanoseconds c)
+
+||| Closes an event file descriptor.
+export %inline
+closeTimer : TimerFD -> PrimIO ()
+closeTimer = close . file
+
+||| Creates and finally closes and event file descriptor.
+export
+withTimer :
+     ClockTpe
+  -> Clock Duration
+  -> Flags
+  -> (TimerFD -> PrimIO a)
+  -> PrimIO a
+withTimer ct dur fs f w =
+  let MkIORes tf  w := timerCreate ct fs w
+      MkIORes _   w := setTime tf dur w
+      MkIORes res w := f tf w
+      MkIORes _   w := closeTimer tf w
+   in MkIORes res w
+
+--------------------------------------------------------------------------------
+-- Syntax
+--------------------------------------------------------------------------------
+
+||| The zero duration.
+export %inline
+zero : Clock Duration
+zero = makeDuration 0 0
+
+||| Creates a duration of `n` seconds
+export
+(.s) : (n : Nat) -> Clock Duration
+n.s = makeDuration (cast n) 0
+
+||| Creates a duration of `n` nanoseconds
+export
+(.ns) : (n : Nat) -> Clock Duration
+n.ns = makeDuration 0 (cast n)
+
+||| Creates a duration of `n` microseconds
+export
+(.us) : (n : Nat) -> Clock Duration
+n.us = (n * 1_000).ns
+
+||| Creates a duration of `n` milliseconds
+export
+(.ms) : (n : Nat) -> Clock Duration
+n.ms = (n * 1_000_000).ns

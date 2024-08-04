@@ -32,6 +32,9 @@ prim__signalfd : Int32 -> AnyPtr -> Bits32 -> PrimIO Bits32
 %foreign "C:ep_readSignal,epoll-idris"
 prim__ep_readSignal : Bits32 -> PrimIO Bits32
 
+%foreign "C:raise,epoll-idris"
+prim__raise : Bits32 -> PrimIO ()
+
 %foreign "C:ep_sigblock,epoll-idris"
 prim__sigblock : AnyPtr -> PrimIO ()
 
@@ -130,8 +133,8 @@ export %inline
 Monoid Flags where neutral = F 0
 
 export %inline
-TFD_CLOEXEC : Flags
-TFD_CLOEXEC = F ep_sfd_cloexec
+SFD_CLOEXEC : Flags
+SFD_CLOEXEC = F ep_sfd_cloexec
 
 ||| Sets the file descriptor to non-blocking: Reading from
 ||| a `SignalFD` via `readSignal` will usually block the calling thread
@@ -140,8 +143,8 @@ TFD_CLOEXEC = F ep_sfd_cloexec
 ||| With this flag being set, `readSignal` will never block but will return
 ||| `Left EAGAIN` in case of a still running signal.
 export %inline
-TFD_NONBLOCK : Flags
-TFD_NONBLOCK = F ep_sfd_nonblock
+SFD_NONBLOCK : Flags
+SFD_NONBLOCK = F ep_sfd_nonblock
 
 ||| A signal file descriptor that can be monitored via `epoll`.
 public export
@@ -179,11 +182,7 @@ blockSignals ss w =
      MkIORes _    w := prim__sigblock ptr w
   in toPrim (free ptr) w
 
-||| Reads the current value from a signal file descriptor, returning the
-||| number of times the signal has expired since the last read.
-|||
-||| This will block the calling thread unless the `SFD_NONBLOCK` flag
-||| was set.
+||| Reads the next caught signal from a signal file descriptor.
 export
 readSignal : SignalFD -> PrimIO (Either EpollErr Bits32)
 readSignal (SFD f) w =
@@ -205,3 +204,7 @@ withSignal ss fs f w =
       MkIORes res w := f tf w
       MkIORes _   w := closeSignal tf w
    in MkIORes res w
+
+export %inline
+raise : Signal -> PrimIO ()
+raise s = prim__raise (signalCode s)

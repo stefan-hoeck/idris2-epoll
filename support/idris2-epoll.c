@@ -3,7 +3,9 @@
 #include <errno.h>
 #include <sys/epoll.h>
 #include <sys/eventfd.h>
+#include <sys/signalfd.h>
 #include <sys/timerfd.h>
+#include <signal.h>
 #include <unistd.h>
 
 //
@@ -218,4 +220,36 @@ void *ep_setTime (int tfd, time_t secs, uint32_t nanos) {
     spec.it_value.tv_sec = secs;
     spec.it_value.tv_nsec = nanos;
     timerfd_settime(tfd, 0, &spec, NULL);
+}
+
+//
+// Signal Files
+//
+
+int ep_sfd_cloexec() {
+    return SFD_CLOEXEC;
+}
+
+int ep_sfd_nonblock() {
+    return SFD_NONBLOCK;
+}
+
+sigset_t *ep_allocSignalset() {
+    sigset_t *res = malloc(sizeof(sigset_t));
+    sigemptyset(res);
+    return res;
+}
+
+int ep_sigblock(const sigset_t *set) {
+    return sigprocmask(SIG_BLOCK,set, NULL);
+}
+
+int ep_readSignal(int sfd) {
+    struct signalfd_siginfo res;
+    ssize_t sz = read(sfd, &res, sizeof(struct signalfd_siginfo));
+    if (sz <= 0) {
+      return 0;
+    } else {
+      return res.ssi_signo;
+    }
 }

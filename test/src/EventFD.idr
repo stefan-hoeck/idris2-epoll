@@ -7,6 +7,7 @@ import Hedgehog
 
 %default total
 
+export
 runPrim : PrimIO a -> a
 runPrim f = let MkIORes v w := f %MkWorld in v
 

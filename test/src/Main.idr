@@ -1,9 +1,10 @@
 module Main
 
 import Data.Finite
-import System.Linux.Epoll
 import EventFD
 import Hedgehog
+import System.Linux.Epoll
+import TimerFD
 
 %default total
 
@@ -28,4 +29,5 @@ main = do
 
   test
     [ EventFD.props
+    , TimerFD.props
     ]

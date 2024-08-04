@@ -1,6 +1,5 @@
 module TimerFD
 
-import Debug.Trace
 import EventFD
 import Hedgehog
 import System.Linux.Error

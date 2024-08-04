@@ -4,6 +4,8 @@ import Data.Finite
 import EventFD
 import Hedgehog
 import System.Linux.Epoll
+import System.Linux.SignalFD
+import SignalFD
 import TimerFD
 
 %default total
@@ -27,7 +29,10 @@ main = do
   traverse_ (printItm flagCode)
     [EPOLLET,EPOLLONESHOT,EPOLLWAKEUP,EPOLLEXCLUSIVE]
 
+  fromPrim (blockSignals values)
+
   test
     [ EventFD.props
     , TimerFD.props
+    , SignalFD.props
     ]

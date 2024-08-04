@@ -16,6 +16,7 @@ modules = System.Linux.Epoll
         , System.Linux.Error
         , System.Linux.EventFD
         , System.Linux.File
+        , System.Linux.SignalFD
         , System.Linux.TimerFD
 
 prebuild = "make -C support"

@@ -20,8 +20,9 @@ readNonblockingRes dur = justRead dur TFD_NONBLOCK
 
 readNonblockingAfterwait : Clock Duration -> Either EpollErr Bits64
 readNonblockingAfterwait dur =
-  runPrim $ \w =>
-    let
+  runPrim $ withTimer MONOTONIC dur TFD_NONBLOCK $ \t1,w =>
+    let MkIORes _ w := withTimer MONOTONIC dur neutral readTimer w
+     in readTimer t1 w
 
 prop_readBlocking : Property
 prop_readBlocking =
@@ -35,10 +36,17 @@ prop_readNonblocking =
     n <- forAll (nat $ linear 1 1000)
     readNonblockingRes n.ms === Left EAGAIN
 
+prop_readNonblockingAfterwait : Property
+prop_readNonblockingAfterwait =
+  property $ do
+    n <- forAll (nat $ linear 1 1000)
+    readNonblockingAfterwait n.us === Right 1
+
 export
 props : Group
 props =
   MkGroup "TimerFD"
-    [("prop_readBlocking", prop_readBlocking)
-    ,("prop_readNonblocking", prop_readNonblocking)
+    [ ("prop_readBlocking", prop_readBlocking)
+    , ("prop_readNonblocking", prop_readNonblocking)
+    , ("prop_readNonblockingAfterwait", prop_readNonblockingAfterwait)
     ]

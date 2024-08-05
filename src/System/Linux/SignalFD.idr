@@ -208,3 +208,6 @@ withSignal ss fs f w =
 export %inline
 raise : Signal -> PrimIO ()
 raise s = prim__raise (signalCode s)
+
+export %inline
+EpollFile SignalFD where descriptor = file

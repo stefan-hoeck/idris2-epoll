@@ -83,3 +83,7 @@ getErr : PrimIO (Either EpollErr a)
 getErr w =
   let MkIORes v w := prim__errno w
    in MkIORes (Left $ fromCode v) w
+
+export
+checkErr : Int32 -> PrimIO (Either EpollErr ())
+checkErr n w = if n < 0 then getErr w else MkIORes (Right ()) w

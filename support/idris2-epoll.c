@@ -141,6 +141,14 @@ struct epoll_event *ep_eventAt(struct epoll_event *ev, int ix) {
   return &ev[ix];
 }
 
+int ep_epoll_add(int epfd, uint32_t flags, int file, uint32_t events) {
+  struct epoll_event ev;
+  ev.events = events | flags;
+  ev.data.fd = file;
+
+  return epoll_ctl(epfd, EPOLL_CTL_ADD, file, &ev);
+}
+
 //
 // Event Files
 //

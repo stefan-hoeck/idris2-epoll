@@ -210,6 +210,8 @@ export %inline
 epollCtl : EpollFD -> EpollOp -> FileDesc -> EpollEvent -> IO Bits32
 epollCtl (EFD ef) o (FD f) (EE p) = fromPrim $ prim__epoll_ctl ef (opCode o) f p
 
+||| Creates a new epoll file descriptor that can be used to monitor
+||| other file descriptors for readiness.
 export %inline
 epollCreate : IO (Either EpollErr EpollFD)
 epollCreate =

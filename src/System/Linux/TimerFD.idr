@@ -153,6 +153,9 @@ withTimer ct dur fs f w =
       MkIORes _   w := closeTimer tf w
    in MkIORes res w
 
+export %inline
+EpollFile TimerFD where descriptor = file
+
 --------------------------------------------------------------------------------
 -- Syntax
 --------------------------------------------------------------------------------

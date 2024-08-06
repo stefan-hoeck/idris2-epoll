@@ -132,3 +132,6 @@ withEv i fs f w =
       MkIORes res w := f ev w
       MkIORes _   w := closeEv ev w
    in MkIORes res w
+
+export %inline
+EpollFile EventFD where descriptor = file

@@ -16,3 +16,7 @@ prim__close : Bits32 -> PrimIO ()
 export %inline
 close : (file : Bits32) -> PrimIO ()
 close = prim__close
+
+public export
+interface EpollFile a where
+  descriptor : a -> Bits32

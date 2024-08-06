@@ -49,22 +49,6 @@ int ep_eperm() {
 }
 
 //
-// Operations
-//
-
-int ep_epoll_ctl_add() {
-  return EPOLL_CTL_ADD;
-}
-
-int ep_epoll_ctl_mod() {
-  return EPOLL_CTL_MOD;
-}
-
-int ep_epoll_ctl_del() {
-  return EPOLL_CTL_DEL;
-}
-
-//
 // Events
 //
 
@@ -120,25 +104,37 @@ int ep_errno() {
   return errno;
 }
 
-struct epoll_event *ep_allocEvent(int n) {
-  struct epoll_event *res = malloc(n * sizeof(struct epoll_event));
+struct epoll_event *ep_allocEvent() {
+  struct epoll_event *res = malloc(sizeof(struct epoll_event));
   return res;
-}
-
-void *ep_setEvent(struct epoll_event *ev, int events) {
-  ev->events = events;
-}
-
-void *ep_setFile(struct epoll_event *ev, int file) {
-  ev->data.fd = file;
 }
 
 int ep_getFile(struct epoll_event *ev) {
   return ev->data.fd;
 }
 
-struct epoll_event *ep_eventAt(struct epoll_event *ev, int ix) {
-  return &ev[ix];
+uint32_t ep_getEvents(struct epoll_event *ev) {
+  return ev->events;
+}
+
+int ep_epoll_add(int epfd, uint32_t flags, int file, uint32_t events) {
+  struct epoll_event ev;
+  ev.events = events | flags;
+  ev.data.fd = file;
+
+  return epoll_ctl(epfd, EPOLL_CTL_ADD, file, &ev);
+}
+
+int ep_epoll_mod(int epfd, uint32_t flags, int file, uint32_t events) {
+  struct epoll_event ev;
+  ev.events = events | flags;
+  ev.data.fd = file;
+
+  return epoll_ctl(epfd, EPOLL_CTL_MOD, file, &ev);
+}
+
+int ep_epoll_del(int epfd, int file) {
+  return epoll_ctl(epfd, EPOLL_CTL_DEL, file, NULL);
 }
 
 //

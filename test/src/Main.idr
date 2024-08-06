@@ -1,11 +1,13 @@
 module Main
 
 import Data.Finite
+import Epoll
 import EventFD
 import Hedgehog
+import SignalFD
+import System
 import System.Linux.Epoll
 import System.Linux.SignalFD
-import SignalFD
 import TimerFD
 
 %default total
@@ -18,9 +20,6 @@ main = do
   putStrLn "Errors:"
   traverse_ (printItm errCode) values
 
-  putStrLn "\nOperations:"
-  traverse_ (printItm opCode) values
-
   putStrLn "\nEvents:"
   traverse_ (printItm eventCode)
     [EPOLLIN,EPOLLOUT,EPOLLRDHUP,EPOLLPRI,EPOLLERR,EPOLLHUP]
@@ -31,8 +30,11 @@ main = do
 
   fromPrim (blockSignals values)
 
+  Right efd <- epollCreate | Left err => die "Epoll error: \{show err}"
+
   test
     [ EventFD.props
     , TimerFD.props
     , SignalFD.props
+    , Epoll.props efd
     ]

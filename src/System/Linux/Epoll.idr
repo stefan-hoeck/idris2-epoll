@@ -5,38 +5,11 @@ import Data.Nat
 import Derive.Finite
 import Derive.Prelude
 import public System.Linux.Error
+import public System.Linux.File
 import System.FFI
 
 %default total
 %language ElabReflection
-
---------------------------------------------------------------------------------
--- Operations
---------------------------------------------------------------------------------
-
-export %foreign "C:ep_epoll_ctl_add,epoll-idris"
-epoll_ctl_add : Bits32
-
-export %foreign "C:ep_epoll_ctl_mod,epoll-idris"
-epoll_ctl_mod : Bits32
-
-export %foreign "C:ep_epoll_ctl_del,epoll-idris"
-epoll_ctl_del : Bits32
-
-||| epoll operation tags for adding, modifying, and deleting file descriptors.
-public export
-data EpollOp = Add | Mod | Del
-
-%runElab derive "EpollOp" [Show,Eq,Finite]
-
-export
-Interpolation EpollOp where interpolate = show
-
-export
-opCode : EpollOp -> Bits32
-opCode Add = epoll_ctl_add
-opCode Mod = epoll_ctl_mod
-opCode Del = epoll_ctl_del
 
 --------------------------------------------------------------------------------
 -- Events
@@ -60,7 +33,7 @@ epollerr : Bits32
 export %foreign "C:ep_epollhup,epoll-idris"
 epollhup : Bits32
 
-||| Type of event epoll can wait for.
+||| Type of events epoll can wait for.
 |||
 ||| For every file descriptor observed by epoll a
 ||| combination of events can be watched for. Events
@@ -109,7 +82,7 @@ EPOLLHUP : Events
 EPOLLHUP = E epollhup
 
 --------------------------------------------------------------------------------
--- Flag
+-- Flags
 --------------------------------------------------------------------------------
 
 export %foreign "C:ep_epollet,epoll-idris"
@@ -125,34 +98,38 @@ export %foreign "C:ep_epollexclusive,epoll-idris"
 epollexclusive : Bits32
 
 export
-record Flag where
+record Flags where
   constructor F
   value : Bits32
 
-%runElab derive "Flag" [Show,Eq,Ord]
+%runElab derive "Flags" [Show,Eq,Ord]
 
 export %inline
-flagCode : Flag -> Bits32
+flagCode : Flags -> Bits32
 flagCode = value
 
 export %inline
-Semigroup Flag where
+Semigroup Flags where
   F x <+> F y = F (x .|. y)
 
 export %inline
-EPOLLET : Flag
+Monoid Flags where
+  neutral = F 0
+
+export %inline
+EPOLLET : Flags
 EPOLLET = F epollet
 
 export %inline
-EPOLLONESHOT : Flag
+EPOLLONESHOT : Flags
 EPOLLONESHOT = F epolloneshot
 
 export %inline
-EPOLLWAKEUP : Flag
+EPOLLWAKEUP : Flags
 EPOLLWAKEUP = F epollwakeup
 
 export %inline
-EPOLLEXCLUSIVE : Flag
+EPOLLEXCLUSIVE : Flags
 EPOLLEXCLUSIVE = F epollexclusive
 
 --------------------------------------------------------------------------------
@@ -162,34 +139,29 @@ EPOLLEXCLUSIVE = F epollexclusive
 %foreign  "C:close,epoll-idris"
 prim__close : Bits32 -> PrimIO ()
 
-%foreign  "C:epoll_ctl,epoll-idris"
-prim__epoll_ctl : Bits32 -> Bits32 -> Bits32 -> AnyPtr -> PrimIO Bits32
+%foreign  "C:ep_epoll_add,epoll-idris"
+prim__epoll_add : Bits32 -> Bits32 -> Bits32 -> Bits32 -> PrimIO Int32
+
+%foreign  "C:ep_epoll_mod,epoll-idris"
+prim__epoll_mod : Bits32 -> Bits32 -> Bits32 -> Bits32 -> PrimIO Int32
+
+%foreign  "C:ep_epoll_del,epoll-idris"
+prim__epoll_del : Bits32 -> Bits32 -> PrimIO Int32
 
 %foreign  "C:epoll_wait,epoll-idris"
-prim__epoll_wait : Bits32 -> AnyPtr -> Bits32 -> Int32 -> PrimIO Bits32
+prim__epoll_wait : Bits32 -> AnyPtr -> Bits32 -> Int32 -> PrimIO Int32
 
 %foreign  "C:epoll_create1,epoll-idris"
 prim__epoll_create1 : Bits32 -> PrimIO Int32
 
-%foreign  "C:ep_allocEvents,epoll-idris"
-prim__ep_allocEvent : Bits32 -> PrimIO AnyPtr
-
-%foreign  "C:ep_setEvent,epoll-idris"
-prim__ep_setEvent : AnyPtr -> Bits32 -> PrimIO ()
-
-%foreign  "C:ep_setFile,epoll-idris"
-prim__ep_setFile : AnyPtr -> Bits32 -> PrimIO ()
+%foreign  "C:ep_allocEvent,epoll-idris"
+prim__ep_allocEvent : PrimIO AnyPtr
 
 %foreign  "C:ep_getFile,epoll-idris"
 prim__ep_getFile : AnyPtr -> PrimIO Bits32
 
-%foreign  "C:ep_eventAt,epoll-idris"
-prim__ep_eventAt : AnyPtr -> Bits32 -> PrimIO AnyPtr
-
-public export
-record FileDesc where
-  constructor FD
-  file : Bits32
+%foreign  "C:ep_getEvents,epoll-idris"
+prim__ep_getEvents : AnyPtr -> PrimIO Bits32
 
 export
 record EpollEvent where
@@ -205,58 +177,81 @@ export
 record EpollFD where
   constructor EFD
   fileDesc : Bits32
+  event    : AnyPtr
 
-export %inline
-epollCtl : EpollFD -> EpollOp -> FileDesc -> EpollEvent -> IO Bits32
-epollCtl (EFD ef) o (FD f) (EE p) = fromPrim $ prim__epoll_ctl ef (opCode o) f p
+export
+Show EpollFD where show = show . fileDesc
 
-export %inline
+parameters {0 a : Type}
+           {auto ef : EpollFile a}
+
+  ||| Adds, modifies, or removes interest in the given file descriptor
+  ||| at an epoll instance.
+  export %inline
+  epollAdd : EpollFD -> a -> Events -> Flags -> PrimIO (Either EpollErr ())
+  epollAdd (EFD ef _) f (E e) (F fl) w =
+    let MkIORes n w := prim__epoll_add ef fl (descriptor f) e w
+     in checkErr n w
+
+  ||| Adds, modifies, or removes interest in the given file descriptor
+  ||| at an epoll instance.
+  export %inline
+  epollMod : EpollFD -> a -> Events -> Flags -> PrimIO (Either EpollErr ())
+  epollMod (EFD ef _) f (E e) (F fl) w =
+    let MkIORes n w := prim__epoll_mod ef fl (descriptor f) e w
+     in checkErr n w
+
+  ||| Adds, modifies, or removes interest in the given file descriptor
+  ||| at an epoll instance.
+  export %inline
+  epollDel : EpollFD -> a -> PrimIO (Either EpollErr ())
+  epollDel (EFD ef _) f w =
+    let MkIORes n w := prim__epoll_del ef (descriptor f) w
+     in checkErr n w
+
+||| Creates a new epoll file descriptor that can be used to monitor
+||| other file descriptors for readiness.
+export
 epollCreate : IO (Either EpollErr EpollFD)
 epollCreate =
   fromPrim $ \w =>
     let MkIORes res w := prim__epoll_create1 0 w
      in case res of
           -1 => getErr w
-          n  => MkIORes (Right $ EFD $ cast n) w
+          n  =>
+            let MkIORes ptr w := prim__ep_allocEvent w
+             in MkIORes (Right $ EFD (cast n) ptr) w
+
+public export
+data EpollRes : Type where
+  NoEv : EpollRes
+  Ev   : (file : Bits32) -> (ev : Events) -> EpollRes
+  Err  : EpollErr -> EpollRes
+
+%runElab derive "EpollRes" [Show,Eq]
+
+fromLeft : Either EpollErr Void -> EpollRes
+fromLeft (Left e) = Err e
+fromLeft (Right v) impossible
+
+export
+epollWait : EpollFD -> (timeout : Int32) -> PrimIO EpollRes
+epollWait (EFD f p) timeout w=
+  let MkIORes n w := prim__epoll_wait f p 1 timeout w
+   in case n of
+        0 => MkIORes NoEv w
+        1 =>
+          let MkIORes f w := prim__ep_getFile p w
+              MkIORes e w := prim__ep_getEvents p w
+           in MkIORes (Ev f $ E e) w
+        _ =>
+          let MkIORes e w := getErr w
+           in MkIORes (fromLeft e) w
 
 export %inline
-allocEvent : IO EpollEvent
-allocEvent =
-  fromPrim $ \w =>
-    let MkIORes ev w := prim__ep_allocEvent 1 w
-     in MkIORes (EE ev) w
+epollWaitTimeout : EpollFD -> (ms : Bits32) -> PrimIO EpollRes
+epollWaitTimeout fd = epollWait fd . cast
 
 export %inline
-allocEvents : (n : Nat) -> IO (EpollEvents n)
-allocEvents n =
-  fromPrim $ \w =>
-    let MkIORes ev w := prim__ep_allocEvent (cast n) w
-     in MkIORes (EES ev) w
-
-export %inline
-freeEvent : EpollEvent -> IO ()
-freeEvent (EE ev) = free ev
-
-export %inline
-freeEvents : EpollEvents n -> IO ()
-freeEvents (EES ev) = free ev
-
-export %inline
-epollWaitTimeout :
-     {n : Nat}
-  -> EpollFD
-  -> EpollEvents n
-  -> {auto 0 prf : IsSucc n}
-  -> (ms : Bits32)
-  -> IO Bits32
-epollWaitTimeout (EFD f) (EES p) ms =
-  fromPrim $ prim__epoll_wait f p (cast n) (cast ms)
-
-export %inline
-epollNoWait :
-     {n : Nat}
-  -> EpollFD
-  -> EpollEvents n
-  -> {auto 0 prf : IsSucc n}
-  -> IO Bits32
-epollNoWait (EFD f) (EES p) = fromPrim $ prim__epoll_wait f p (cast n) 0
+epollNoWait : EpollFD -> PrimIO EpollRes
+epollNoWait fd = epollWait fd 0

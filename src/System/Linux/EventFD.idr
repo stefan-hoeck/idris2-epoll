@@ -92,6 +92,9 @@ record EventFD where
   constructor EFD
   file : Bits32
 
+export %inline
+FileDesc EventFD where fileDesc = file
+
 ||| Creates a new `EventFD` with the given initial value a flags set.
 export %inline
 eventfd : (init : Bits64) -> Flags -> PrimIO EventFD
@@ -119,19 +122,11 @@ readEv (EFD f) w =
         0 => getErr w
         n => MkIORes (Right n) w
 
-||| Closes an event file descriptor.
-export %inline
-closeEv : EventFD -> PrimIO ()
-closeEv = close . file
-
 ||| Creates and finally closes and event file descriptor.
 export
 withEv : Bits64 -> Flags -> (EventFD -> PrimIO a) -> PrimIO a
 withEv i fs f w =
   let MkIORes ev  w := eventfd i fs w
       MkIORes res w := f ev w
-      MkIORes _   w := closeEv ev w
+      MkIORes _   w := close ev w
    in MkIORes res w
-
-export %inline
-EpollFile EventFD where descriptor = file

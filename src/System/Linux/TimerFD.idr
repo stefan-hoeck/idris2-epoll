@@ -108,6 +108,9 @@ record TimerFD where
   constructor TFD
   file : Bits32
 
+export %inline
+FileDesc TimerFD where fileDesc = file
+
 ||| Creates a new `TimerFD` with the given initial value a flags set.
 export %inline
 timerCreate : ClockTpe -> Flags -> PrimIO TimerFD
@@ -133,11 +136,6 @@ setTime : TimerFD -> Clock Duration -> PrimIO ()
 setTime (TFD f) c =
   prim__ep_setTime f (cast $ seconds c) (cast $ nanoseconds c)
 
-||| Closes an event file descriptor.
-export %inline
-closeTimer : TimerFD -> PrimIO ()
-closeTimer = close . file
-
 ||| Creates and finally closes and event file descriptor.
 export
 withTimer :
@@ -150,11 +148,8 @@ withTimer ct dur fs f w =
   let MkIORes tf  w := timerCreate ct fs w
       MkIORes _   w := setTime tf dur w
       MkIORes res w := f tf w
-      MkIORes _   w := closeTimer tf w
+      MkIORes _   w := close tf w
    in MkIORes res w
-
-export %inline
-EpollFile TimerFD where descriptor = file
 
 --------------------------------------------------------------------------------
 -- Syntax

@@ -29,25 +29,25 @@ assertEvents es (Err x)   = failWith Nothing "unexpected erro: \{x}"
 
 parameters (efd : EpollFD)
 
-  withFile : EpollFile a => PrimIO a -> (a -> PrimIO b) -> b
+  withFile : FileDesc a => PrimIO a -> (a -> PrimIO b) -> b
   withFile mkFile f =
     runPrim $ \w =>
       let MkIORes file w := mkFile w
           MkIORes vb   w := f file w
-          MkIORes _    w := close (descriptor file) w
+          MkIORes _    w := close file w
        in MkIORes vb w
 
-  addDel : EpollFile a => PrimIO a -> Either EpollErr ()
+  addDel : FileDesc a => PrimIO a -> Either EpollErr ()
   addDel mkFile =
     withFile mkFile $ \file,w =>
       let MkIORes res1 w := epollAdd efd file EPOLLIN neutral w
           MkIORes res2 w := epollDel efd file w
        in MkIORes (res1 >> res2) w
 
-  delOnly : EpollFile a => PrimIO a -> Either EpollErr ()
+  delOnly : FileDesc a => PrimIO a -> Either EpollErr ()
   delOnly mkFile = withFile mkFile $ epollDel efd
 
-  addTwice : EpollFile a => PrimIO a -> Either EpollErr ()
+  addTwice : FileDesc a => PrimIO a -> Either EpollErr ()
   addTwice mkFile =
     withFile mkFile $ \file,w =>
       let MkIORes res1 w := epollAdd efd file EPOLLIN neutral w
@@ -55,7 +55,7 @@ parameters (efd : EpollFD)
        in MkIORes res2 w
 
   testEpoll :
-       {auto epf : EpollFile a}
+       {auto epf : FileDesc a}
     -> PrimIO a
     -> Epoll.Flags
     -> (timeout : Int32)
@@ -67,7 +67,7 @@ parameters (efd : EpollFD)
           MkIORes res3 w := epollDel efd file w
        in MkIORes (res1 ?>> res2 >>? res3)  w
 
-  testEpollET : EpollFile a => PrimIO a -> (timeout : Int32) -> EpollRes
+  testEpollET : FileDesc a => PrimIO a -> (timeout : Int32) -> EpollRes
   testEpollET mkFile timeout = testEpoll mkFile EPOLLET timeout
 
   readEpoll : EventFD.Flags -> Epoll.Flags -> EpollRes

@@ -176,21 +176,21 @@ record EpollEvents (n : Nat) where
 export
 record EpollFD where
   constructor EFD
-  fileDesc : Bits32
-  event    : AnyPtr
+  file  : Bits32
+  event : AnyPtr
 
 export
-Show EpollFD where show = show . fileDesc
+Show EpollFD where show = show . file
 
 parameters {0 a : Type}
-           {auto ef : EpollFile a}
+           {auto ef : FileDesc a}
 
   ||| Adds, modifies, or removes interest in the given file descriptor
   ||| at an epoll instance.
   export %inline
   epollAdd : EpollFD -> a -> Events -> Flags -> PrimIO (Either EpollErr ())
   epollAdd (EFD ef _) f (E e) (F fl) w =
-    let MkIORes n w := prim__epoll_add ef fl (descriptor f) e w
+    let MkIORes n w := prim__epoll_add ef fl (fileDesc f) e w
      in checkErr n w
 
   ||| Adds, modifies, or removes interest in the given file descriptor
@@ -198,7 +198,7 @@ parameters {0 a : Type}
   export %inline
   epollMod : EpollFD -> a -> Events -> Flags -> PrimIO (Either EpollErr ())
   epollMod (EFD ef _) f (E e) (F fl) w =
-    let MkIORes n w := prim__epoll_mod ef fl (descriptor f) e w
+    let MkIORes n w := prim__epoll_mod ef fl (fileDesc f) e w
      in checkErr n w
 
   ||| Adds, modifies, or removes interest in the given file descriptor
@@ -206,7 +206,7 @@ parameters {0 a : Type}
   export %inline
   epollDel : EpollFD -> a -> PrimIO (Either EpollErr ())
   epollDel (EFD ef _) f w =
-    let MkIORes n w := prim__epoll_del ef (descriptor f) w
+    let MkIORes n w := prim__epoll_del ef (fileDesc f) w
      in checkErr n w
 
 ||| Creates a new epoll file descriptor that can be used to monitor

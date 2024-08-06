@@ -1,12 +1,26 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <sys/epoll.h>
 #include <sys/eventfd.h>
 #include <sys/signalfd.h>
 #include <sys/timerfd.h>
 #include <signal.h>
 #include <unistd.h>
+
+//
+// File utilities
+//
+
+int ep_set_nonblocking(int fd) {
+  int flags = fcntl(fd, F_GETFD, 0);
+  return fcntl(fd, F_SETFD, flags | O_NONBLOCK);
+}
+
+ssize_t ep_read(uint32_t file, char *buf, uint32_t offset, size_t count) {
+  return read(file, buf + offset, count);
+}
 
 //
 // Error codes
@@ -18,6 +32,22 @@ int ep_eagain() {
 
 int ep_ebadf() {
   return EBADF;
+}
+
+int ep_efault() {
+  return EFAULT;
+}
+
+int ep_eintr() {
+  return EINTR;
+}
+
+int ep_eio() {
+  return EIO;
+}
+
+int ep_ewouldblock() {
+  return EWOULDBLOCK;
 }
 
 int ep_eexist() {
@@ -46,6 +76,10 @@ int ep_enospc() {
 
 int ep_eperm() {
   return EPERM;
+}
+
+int ep_eisdir() {
+  return EISDIR;
 }
 
 //

@@ -1,5 +1,6 @@
 module Epoll
 
+import Data.SOP
 import EventFD
 import Hedgehog
 import System.Linux.Epoll
@@ -20,6 +21,11 @@ private infixl 1 >>>, ?>>, >>?
 (>>?) : EpollRes -> Either EpollErr a -> EpollRes
 (>>?) y (Left err) = Err err
 (>>?) y _          = y
+
+assertEvents : Events -> EpollRes -> PropertyT ()
+assertEvents es (Ev _ vs) = es === vs
+assertEvents es NoEv      = failWith Nothing "no event"
+assertEvents es (Err x)   = failWith Nothing "unexpected erro: \{x}"
 
 parameters (efd : EpollFD)
 
@@ -51,22 +57,28 @@ parameters (efd : EpollFD)
   testEpoll :
        {auto epf : EpollFile a}
     -> PrimIO a
-    -> Events
     -> Epoll.Flags
     -> (timeout : Int32)
     -> EpollRes
-  testEpoll mkFile evs fs timeout =
+  testEpoll mkFile fs timeout =
     withFile mkFile $ \file,w =>
-      let MkIORes res1 w := epollAdd efd file evs fs w
+      let MkIORes res1 w := epollAdd efd file EPOLLIN fs w
           MkIORes res2 w := epollWait efd timeout w
           MkIORes res3 w := epollDel efd file w
        in MkIORes (res1 ?>> res2 >>? res3)  w
 
-  testEpollIn : EpollFile a => PrimIO a -> (timeout : Int32) -> EpollRes
-  testEpollIn mkFile timeout = testEpoll mkFile EPOLLIN neutral timeout
+  testEpollET : EpollFile a => PrimIO a -> (timeout : Int32) -> EpollRes
+  testEpollET mkFile timeout = testEpoll mkFile EPOLLET timeout
 
-  testEpollInET : EpollFile a => PrimIO a -> (timeout : Int32) -> EpollRes
-  testEpollInET mkFile timeout = testEpoll mkFile EPOLLIN EPOLLET timeout
+  readEpoll : EventFD.Flags -> Epoll.Flags -> EpollRes
+  readEpoll fls fs =
+    withFile (eventfd 10 fls) $ \file,w =>
+      let MkIORes _   w := epollAdd efd file EPOLLIN fs w
+          MkIORes _   w := epollWait efd 0 w
+          MkIORes _   w := readEv file w
+          MkIORes res w := epollWait efd 0 w
+          MkIORes _   w := epollDel efd file w
+       in MkIORes res  w
 
 --------------------------------------------------------------------------------
 -- Core Functionality
@@ -98,7 +110,25 @@ parameters (efd : EpollFD)
   prop_emptyEv =
     property $ do
       n <- forAll (int32 $ linear 0 10)
-      testEpollIn (eventfd 0 neutral) n === NoEv
+      testEpoll (eventfd 0 neutral) neutral n === NoEv
+
+  prop_nonEmptyEv : Property
+  prop_nonEmptyEv =
+    property $ do
+      [n,v] <- forAll $ np [int32 $ linear 0 10, bits64 $ linear 1 0xffff]
+      assertEvents EPOLLIN $ testEpoll (eventfd v neutral) neutral n
+
+  prop_eventAfterRead : Property
+  prop_eventAfterRead =
+    property1 $ do
+      readEpoll neutral neutral === NoEv
+      readEpoll neutral EPOLLET === NoEv
+
+  prop_semaphoreAfterRead : Property
+  prop_semaphoreAfterRead =
+    property1 $ do
+      assertEvents EPOLLIN (readEpoll EFD_SEMAPHORE neutral)
+      readEpoll EFD_SEMAPHORE EPOLLET === NoEv
 
   export
   props : Group
@@ -108,4 +138,7 @@ parameters (efd : EpollFD)
       , ("prop_delOnly", prop_delOnly)
       , ("prop_addTwice", prop_addTwice)
       , ("prop_emptyEv", prop_emptyEv)
+      , ("prop_nonEmptyEv", prop_nonEmptyEv)
+      , ("prop_eventAfterRead", prop_eventAfterRead)
+      , ("prop_semaphoreAfterRead", prop_semaphoreAfterRead)
       ]

@@ -152,6 +152,9 @@ record SignalFD where
   constructor SFD
   file : Bits32
 
+export %inline
+FileDesc SignalFD where fileDesc = file
+
 addSignals : List Signal -> AnyPtr -> PrimIO ()
 addSignals []        ptr w = MkIORes () w
 addSignals (x :: xs) ptr w =
@@ -191,23 +194,15 @@ readSignal (SFD f) w =
         0 => getErr w
         n => MkIORes (Right n) w
 
-||| Closes an event file descriptor.
-export %inline
-closeSignal : SignalFD -> PrimIO ()
-closeSignal = close . file
-
 ||| Creates and finally closes and event file descriptor.
 export
 withSignal : List Signal -> Flags -> (SignalFD -> PrimIO a) -> PrimIO a
 withSignal ss fs f w =
   let MkIORes tf  w := signalCreate ss fs w
       MkIORes res w := f tf w
-      MkIORes _   w := closeSignal tf w
+      MkIORes _   w := close tf w
    in MkIORes res w
 
 export %inline
 raise : Signal -> PrimIO ()
 raise s = prim__raise (signalCode s)
-
-export %inline
-EpollFile SignalFD where descriptor = file

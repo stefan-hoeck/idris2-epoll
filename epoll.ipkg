@@ -8,6 +8,7 @@ langversion >= 0.7.0
 
 depends = base >= 0.7.0
         , elab-util
+        , array
         , finite
 
 sourcedir = "src"

@@ -130,6 +130,10 @@ parameters (efd : EpollFD)
       assertEvents EPOLLIN (readEpoll EFD_SEMAPHORE neutral)
       readEpoll EFD_SEMAPHORE EPOLLET === NoEv
 
+--------------------------------------------------------------------------------
+-- Polling stdin
+--------------------------------------------------------------------------------
+
   export
   props : Group
   props =

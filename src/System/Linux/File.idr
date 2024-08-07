@@ -1,10 +1,13 @@
 module System.Linux.File
 
+import Derive.Finite
+import Derive.Prelude
 import Data.Buffer
 import Data.Buffer.Core
 import System.Linux.Error
 
 %default total
+%language ElabReflection
 
 --------------------------------------------------------------------------------
 -- FFI
@@ -89,3 +92,14 @@ parameters {0 a : Type}
     let MkIORes buf w := prim__newBuf (cast max) w
         MkIORes res w := read fi buf 0 max w
      in MkIORes (toReadRes res buf) w
+
+public export
+data StdFile : Type where
+  StdIn  : StdFile
+  StdOut : StdFile
+  StdErr : StdFile
+
+%runElab derive "StdFile" [Show,Eq,Ord,Finite]
+
+export %inline
+FileDesc StdFile where fileDesc = cast . conIndexStdFile

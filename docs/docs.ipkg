@@ -1,0 +1,12 @@
+package epoll-docs
+version      = 0.0.1
+authors      = "stefan-hoeck"
+license      = "BSD-3 Clause"
+langversion >= 0.7.0
+
+depends = epoll
+        , hedgehog
+
+modules = README
+
+sourcedir = "src"

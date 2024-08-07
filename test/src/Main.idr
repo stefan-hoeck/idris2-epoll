@@ -29,6 +29,8 @@ main = do
   fromPrim (blockSignals values)
 
   Right efd <- epollCreate | Left err => die "Epoll error: \{show err}"
+  Right ()  <- fromPrim $ epollAdd efd StdIn EPOLLIN EPOLLET
+    | Left err => die "Epoll error: \{show err}"
 
   test
     [ EventFD.props

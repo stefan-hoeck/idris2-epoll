@@ -50,6 +50,18 @@ ewouldblock : Bits32
 export %foreign "C:ep_eintr,epoll-idris"
 eintr : Bits32
 
+export %foreign "C:ep_edestaddrreq,epoll-idris"
+edestaddrreq : Bits32
+
+export %foreign "C:ep_efbig,epoll-idris"
+efbig : Bits32
+
+export %foreign "C:ep_edquot,epoll-idris"
+edquot : Bits32
+
+export %foreign "C:ep_epipe,epoll-idris"
+epipe : Bits32
+
 %foreign  "C:ep_errno,epoll-idris"
 prim__errno : PrimIO Bits32
 
@@ -57,8 +69,11 @@ public export
 data EpollErr : Type where
   EAGAIN       : EpollErr
   EBADF        : EpollErr
+  EDESTADDRREQ : EpollErr
+  EDQUOT       : EpollErr
   EEXIST       : EpollErr
   EFAULT       : EpollErr
+  EFBIG        : EpollErr
   EINTR        : EpollErr
   EINVAL       : EpollErr
   EIO          : EpollErr
@@ -68,7 +83,7 @@ data EpollErr : Type where
   ENOMEM       : EpollErr
   ENOSPC       : EpollErr
   EPERM        : EpollErr
-  EWOULDBLOCK  : EpollErr
+  EPIPE        : EpollErr
 
 %runElab derive "EpollErr" [Show,Eq,Finite]
 
@@ -77,23 +92,26 @@ Interpolation EpollErr where interpolate = show
 
 export
 errCode : EpollErr -> Bits32
-errCode EAGAIN      = eagain
-errCode EBADF       = ebadf
-errCode EEXIST      = eexist
-errCode EFAULT      = efault
-errCode EISDIR      = eisdir
-errCode EINTR       = eintr
-errCode EINVAL      = einval
-errCode EIO         = eio
-errCode ELOOP       = eloop
-errCode ENOENT      = enoent
-errCode ENOMEM      = enomem
-errCode ENOSPC      = enospc
-errCode EPERM       = eperm
-errCode EWOULDBLOCK = ewouldblock
+errCode EAGAIN       = eagain
+errCode EBADF        = ebadf
+errCode EDQUOT       = edquot
+errCode EDESTADDRREQ = edestaddrreq
+errCode EEXIST       = eexist
+errCode EFAULT       = efault
+errCode EFBIG        = efbig
+errCode EISDIR       = eisdir
+errCode EINTR        = eintr
+errCode EINVAL       = einval
+errCode EIO          = eio
+errCode ELOOP        = eloop
+errCode ENOENT       = enoent
+errCode ENOMEM       = enomem
+errCode ENOSPC       = enospc
+errCode EPERM        = eperm
+errCode EPIPE        = epipe
 
 pairs : List (Bits32,EpollErr)
-pairs = map (\x => (errCode x, x)) values
+pairs = (ewouldblock, EAGAIN) :: map (\x => (errCode x, x)) values
 
 export
 fromCode : Bits32 -> EpollErr

@@ -17,8 +17,8 @@ prim__newBuf : Bits32 -> PrimIO Buffer
 %foreign "C:ep_read,epoll-idris"
 prim__read : Bits32 -> (buf : Buffer) -> (offset,max : Bits32) -> PrimIO Int32
 
-%foreign "C:write,epoll-idris"
-prim__write : Bits32 -> Buffer -> Bits32 -> PrimIO Int32
+%foreign "C:ep_write,epoll-idris"
+prim__write : Bits32 -> (buf : Buffer) -> (offset,max : Bits32) -> PrimIO Int32
 
 %foreign "C:close,epoll-idris"
 prim__close : Bits32 -> PrimIO ()
@@ -48,10 +48,10 @@ data ReadRes : Type where
   Err   : EpollErr -> ReadRes
 
 toReadRes : Either EpollErr Nat -> Buffer -> ReadRes
-toReadRes (Left EAGAIN) _   = Again
-toReadRes (Left x)      _   = Err x
-toReadRes (Right 0)     _   = EOF
-toReadRes (Right n)     buf = Bytes n (unsafeMakeBuffer buf)
+toReadRes (Left EAGAIN)      _   = Again
+toReadRes (Left x)           _   = Err x
+toReadRes (Right 0)          _   = EOF
+toReadRes (Right n)          buf = Bytes n (unsafeMakeBuffer buf)
 
 parameters {0 a : Type}
            {auto fd : FileDesc a}
@@ -74,8 +74,15 @@ parameters {0 a : Type}
 
   export
   write : a -> Buffer -> (offset,max : Nat) -> PrimIO (Either EpollErr Nat)
-  -- write = prim__read . fileDesc
+  write fi buf offset max w =
+    let MkIORes res w :=prim__write (fileDesc fi) buf (cast offset) (cast max) w
+     in checkSize res w
 
+  ||| A higher-level alternative to `read`: It allocates a new buffer of the
+  ||| given size and returns it wrapped in a `ReadRes`.
+  |||
+  ||| Use `read` if you want to avoid allocating a new buffer for every
+  ||| data package.
   export
   readBytes : a -> (max : Nat) -> PrimIO ReadRes
   readBytes fi max w =

@@ -2,6 +2,7 @@ module Main
 
 import Data.Finite
 import Epoll
+import Error
 import EventFD
 import Hedgehog
 import SignalFD
@@ -17,9 +18,6 @@ printItm code e = putStrLn "  \{show e} (code: \{show $ code e})"
 
 main : IO ()
 main = do
-  putStrLn "Errors:"
-  traverse_ (printItm errCode) values
-
   putStrLn "\nEvents:"
   traverse_ (printItm eventCode)
     [EPOLLIN,EPOLLOUT,EPOLLRDHUP,EPOLLPRI,EPOLLERR,EPOLLHUP]
@@ -36,5 +34,6 @@ main = do
     [ EventFD.props
     , TimerFD.props
     , SignalFD.props
+    , Error.props
     , Epoll.props efd
     ]

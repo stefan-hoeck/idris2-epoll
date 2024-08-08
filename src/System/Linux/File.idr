@@ -26,6 +26,9 @@ prim__write : Bits32 -> (buf : Buffer) -> (offset,max : Bits32) -> PrimIO Int32
 %foreign "C:close,epoll-idris"
 prim__close : Bits32 -> PrimIO ()
 
+%foreign "C:ep_set_nonblocking,epoll-idris"
+prim__setNonBlocking : Bits32 -> PrimIO ()
+
 --------------------------------------------------------------------------------
 -- API
 --------------------------------------------------------------------------------
@@ -92,6 +95,16 @@ parameters {0 a : Type}
     let MkIORes buf w := prim__newBuf (cast max) w
         MkIORes res w := read fi buf 0 max w
      in MkIORes (toReadRes res buf) w
+
+  ||| Changes a file descriptor's mode to `O_NONBLOCK`.
+  |||
+  ||| This will not block when trying to read from a stream such as a pipe, socket, or
+  ||| stdin. Instead, `readBytes` will return `Again` in case no data is currently
+  ||| available. Use this in combination with `EPOLLET` to keep reading from a data
+  ||| source until it is temporarily exhausted.
+  export
+  setNonBlocking : a -> PrimIO ()
+  setNonBlocking = prim__setNonBlocking . fileDesc
 
 public export
 data StdFile : Type where

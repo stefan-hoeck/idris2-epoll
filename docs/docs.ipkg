@@ -10,3 +10,7 @@ depends = epoll
 modules = README
 
 sourcedir = "src"
+
+main = README
+
+executable = "epoll-docs"

@@ -226,7 +226,7 @@ stdinExample efd = do
         Again     => putStrLn "STDIN temporarily exhausted. Waiting for more input." >> go sig tot
         Bytes n b => putStrLn "read \{show n} bytes" >> readIn sig (tot + n)
         Err x     => putStrLn "Error when reading from stdin: \{show x}"
-```idris
+```
 
 Feel free to test the application above by piping several large files into it. It will be
 very interesting to see the interplay between data production and consuption. Try adjusting

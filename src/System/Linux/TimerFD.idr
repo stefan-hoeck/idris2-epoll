@@ -138,15 +138,9 @@ setTime (TFD f) c =
 
 ||| Creates and finally closes and event file descriptor.
 export
-withTimer :
-     ClockTpe
-  -> Clock Duration
-  -> Flags
-  -> (TimerFD -> PrimIO a)
-  -> PrimIO a
-withTimer ct dur fs f w =
+withTimer : ClockTpe -> Flags -> (TimerFD -> PrimIO a) -> PrimIO a
+withTimer ct fs f w =
   let MkIORes tf  w := timerCreate ct fs w
-      MkIORes _   w := setTime tf dur w
       MkIORes res w := f tf w
       MkIORes _   w := close tf w
    in MkIORes res w

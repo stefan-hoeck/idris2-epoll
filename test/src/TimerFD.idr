@@ -8,8 +8,13 @@ import System.Linux.TimerFD
 
 %default total
 
+setAndReadTimer : Clock Duration -> TimerFD -> PrimIO (Either EpollErr Bits64)
+setAndReadTimer dur t w =
+  let MkIORes _ w := setTime t dur w
+   in readTimer t w
+
 justRead : Clock Duration -> Flags -> Either EpollErr Bits64
-justRead dur fs = runPrim $ withTimer MONOTONIC dur fs readTimer
+justRead dur fs = runPrim $ withTimer MONOTONIC fs (setAndReadTimer dur)
 
 readBlockingRes : Clock Duration -> Either EpollErr Bits64
 readBlockingRes dur = justRead dur neutral
@@ -19,8 +24,9 @@ readNonblockingRes dur = justRead dur TFD_NONBLOCK
 
 readNonblockingAfterwait : Clock Duration -> Either EpollErr Bits64
 readNonblockingAfterwait dur =
-  runPrim $ withTimer MONOTONIC dur TFD_NONBLOCK $ \t1,w =>
-    let MkIORes _ w := withTimer MONOTONIC dur neutral readTimer w
+  runPrim $ withTimer MONOTONIC TFD_NONBLOCK $ \t1,w =>
+    let MkIORes _ w := setTime t1 dur w
+        MkIORes _ w := withTimer MONOTONIC neutral (setAndReadTimer dur) w
      in readTimer t1 w
 
 prop_readBlocking : Property

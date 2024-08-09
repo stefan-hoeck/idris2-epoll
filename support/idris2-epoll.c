@@ -14,12 +14,16 @@
 //
 
 int ep_set_nonblocking(int fd) {
-  int flags = fcntl(fd, F_GETFD, 0);
-  return fcntl(fd, F_SETFD, flags | O_NONBLOCK);
+  int flags = fcntl(fd, F_GETFL, 0);
+  return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 }
 
 ssize_t ep_read(uint32_t file, char *buf, uint32_t offset, size_t count) {
   return read(file, buf + offset, count);
+}
+
+ssize_t ep_write(uint32_t file, char *buf, uint32_t offset, size_t count) {
+  return write(file, buf + offset, count);
 }
 
 //
@@ -34,8 +38,20 @@ int ep_ebadf() {
   return EBADF;
 }
 
+int ep_edestaddrreq() {
+  return EDESTADDRREQ;
+}
+
+int ep_edquot() {
+  return EDQUOT;
+}
+
 int ep_efault() {
   return EFAULT;
+}
+
+int ep_efbig() {
+  return EFBIG;
 }
 
 int ep_eintr() {
@@ -72,6 +88,10 @@ int ep_enomem() {
 
 int ep_enospc() {
   return ENOSPC;
+}
+
+int ep_epipe() {
+  return EPIPE;
 }
 
 int ep_eperm() {

@@ -3,3 +3,8 @@ type   = "local"
 path   = "."
 ipkg   = "epoll.ipkg"
 test   = "test/test.ipkg"
+
+[custom.all.epoll-docs]
+type   = "local"
+path   = "docs"
+ipkg   = "docs.ipkg"

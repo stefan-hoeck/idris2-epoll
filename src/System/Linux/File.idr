@@ -37,6 +37,9 @@ public export
 interface FileDesc  a where
   fileDesc : a -> Bits32
 
+export %inline
+FileDesc Bits32 where fileDesc x = x
+
 ||| Result of reading from a file descriptor
 public export
 data ReadRes : Type where

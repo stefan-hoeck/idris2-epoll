@@ -234,6 +234,10 @@ fromLeft : Either EpollErr Void -> EpollRes
 fromLeft (Left e) = Err e
 fromLeft (Right v) impossible
 
+export %inline
+epollClose : EpollFD -> PrimIO ()
+epollClose e = close e.file
+
 export
 epollWait : EpollFD -> (timeout : Int32) -> PrimIO EpollRes
 epollWait (EFD f p) timeout w=

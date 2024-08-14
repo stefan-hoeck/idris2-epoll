@@ -6,6 +6,7 @@ import Derive.Prelude
 import System.FFI
 import System.Linux.Error
 import System.Linux.File
+import public System.Signal
 
 %default total
 %language ElabReflection
@@ -75,41 +76,26 @@ prim__sigusr2 : Bits32
 -- API
 --------------------------------------------------------------------------------
 
-public export
-data Signal : Type where
-  ||| Hangup (i.e. controlling terminal closed)
-  SigHUP : Signal
-  ||| Quit
-  SigQUIT : Signal
-  ||| Trap (as used by debuggers)
-  SigTRAP : Signal
-  SigUser1 : Signal
-  SigUser2 : Signal
-  ||| Interrupt (e.g. ctrl+c pressed)
-  SigINT : Signal
-  ||| Abnormal termination
-  SigABRT : Signal
-  ||| Ill-formed instruction
-  SigILL : Signal
-  ||| Segmentation fault
-  SigSEGV : Signal
-  ||| Floating-point error
-  SigFPE : Signal
+%runElab derive "PosixSignal" [Show,Finite]
 
-%runElab derive "Signal" [Show,Eq,Ord,Finite]
+%runElab derive "Signal" [Show,Finite]
+
+export
+posixCode : PosixSignal -> Bits32
+posixCode SigHUP   = prim__sighup
+posixCode SigQUIT  = prim__sigquit
+posixCode SigTRAP  = prim__sigtrap
+posixCode SigUser1 = prim__sigusr1
+posixCode SigUser2 = prim__sigusr2
 
 export
 signalCode : Signal -> Bits32
-signalCode SigHUP   = prim__sighup
-signalCode SigQUIT  = prim__sigquit
-signalCode SigTRAP  = prim__sigtrap
-signalCode SigUser1 = prim__sigusr1
-signalCode SigUser2 = prim__sigusr2
-signalCode SigINT   = prim__sigint
-signalCode SigABRT  = prim__sigabrt
-signalCode SigILL   = prim__sigill
-signalCode SigSEGV  = prim__sigsegv
-signalCode SigFPE   = prim__sigfpe
+signalCode (SigPosix s) = posixCode s
+signalCode SigINT       = prim__sigint
+signalCode SigABRT      = prim__sigabrt
+signalCode SigILL       = prim__sigill
+signalCode SigSEGV      = prim__sigsegv
+signalCode SigFPE       = prim__sigfpe
 
 ||| Flags describing the behavior of an signal file descriptor.
 |||

@@ -148,7 +148,7 @@ prim__epoll_mod : Bits32 -> Bits32 -> Bits32 -> Bits32 -> PrimIO Int32
 %foreign  "C:ep_epoll_del,epoll-idris"
 prim__epoll_del : Bits32 -> Bits32 -> PrimIO Int32
 
-%foreign  "C:epoll_wait,epoll-idris"
+%foreign  "C__collect_safe:epoll_wait,epoll-idris"
 prim__epoll_wait : Bits32 -> AnyPtr -> Bits32 -> Int32 -> PrimIO Int32
 
 %foreign  "C:epoll_create1,epoll-idris"

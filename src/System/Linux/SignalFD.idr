@@ -15,9 +15,6 @@ import public System.Signal
 -- FFI
 --------------------------------------------------------------------------------
 
-signalFFI : String -> String
-signalFFI fn = "C:" ++ fn ++ ", libidris2_support, idris_signal.h"
-
 %foreign "C:ep_sfd_cloexec,epoll-idris"
 ep_sfd_cloexec : Bits32
 
@@ -42,36 +39,6 @@ prim__sigblock : AnyPtr -> PrimIO ()
 %foreign "C:sigaddset,epoll-idris"
 prim__sigaddset : AnyPtr -> Bits32 -> PrimIO ()
 
-%foreign signalFFI "sighup"
-prim__sighup : Bits32
-
-%foreign signalFFI "sigint"
-prim__sigint : Bits32
-
-%foreign signalFFI "sigabrt"
-prim__sigabrt : Bits32
-
-%foreign signalFFI "sigquit"
-prim__sigquit : Bits32
-
-%foreign signalFFI "sigill"
-prim__sigill : Bits32
-
-%foreign signalFFI "sigsegv"
-prim__sigsegv : Bits32
-
-%foreign signalFFI "sigtrap"
-prim__sigtrap : Bits32
-
-%foreign signalFFI "sigfpe"
-prim__sigfpe : Bits32
-
-%foreign signalFFI "sigusr1"
-prim__sigusr1 : Bits32
-
-%foreign signalFFI "sigusr2"
-prim__sigusr2 : Bits32
-
 --------------------------------------------------------------------------------
 -- API
 --------------------------------------------------------------------------------
@@ -79,23 +46,6 @@ prim__sigusr2 : Bits32
 %runElab derive "PosixSignal" [Show,Finite]
 
 %runElab derive "Signal" [Show,Finite]
-
-export
-posixCode : PosixSignal -> Bits32
-posixCode SigHUP   = prim__sighup
-posixCode SigQUIT  = prim__sigquit
-posixCode SigTRAP  = prim__sigtrap
-posixCode SigUser1 = prim__sigusr1
-posixCode SigUser2 = prim__sigusr2
-
-export
-signalCode : Signal -> Bits32
-signalCode (SigPosix s) = posixCode s
-signalCode SigINT       = prim__sigint
-signalCode SigABRT      = prim__sigabrt
-signalCode SigILL       = prim__sigill
-signalCode SigSEGV      = prim__sigsegv
-signalCode SigFPE       = prim__sigfpe
 
 ||| Flags describing the behavior of an signal file descriptor.
 |||
@@ -144,7 +94,7 @@ FileDesc SignalFD where fileDesc = file
 addSignals : List Signal -> AnyPtr -> PrimIO ()
 addSignals []        ptr w = MkIORes () w
 addSignals (x :: xs) ptr w =
-  let MkIORes _ w := prim__sigaddset ptr (signalCode x) w
+  let MkIORes _ w := prim__sigaddset ptr (cast $ signalCode x) w
    in addSignals xs ptr w
 
 ||| Creates a new `SignalFD`, observing the given signals
@@ -191,4 +141,4 @@ withSignal ss fs f w =
 
 export %inline
 raise : Signal -> PrimIO ()
-raise s = prim__raise (signalCode s)
+raise s = prim__raise (cast $ signalCode s)

@@ -26,7 +26,7 @@ prop_readBlocking : Property
 prop_readBlocking =
   property $ do
     s <- forAll signals
-    readBlockingRes s === Right (signalCode s)
+    readBlockingRes s === Right (cast $ signalCode s)
 
 readNonblockingRes : Signal -> Either EpollErr Bits32
 readNonblockingRes s = justRead s SFD_NONBLOCK
@@ -47,7 +47,7 @@ prop_readNonblockingAfterraise : Property
 prop_readNonblockingAfterraise =
   property $ do
     s <- forAll signals
-    readNonblockingAfterraise s === Right (signalCode s)
+    readNonblockingAfterraise s === Right (cast $ signalCode s)
 
 export
 props : Group

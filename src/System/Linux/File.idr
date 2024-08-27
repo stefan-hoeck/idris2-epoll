@@ -13,10 +13,6 @@ import System.Linux.Error
 -- FFI
 --------------------------------------------------------------------------------
 
-%foreign "scheme:(lambda (n) (make-bytevector n 0))"
-         "javascript:lambda:s=>new Uint8Array(s)"
-prim__newBuf : Bits32 -> PrimIO Buffer
-
 %foreign "C:ep_read,epoll-idris"
 prim__read : Bits32 -> (buf : Buffer) -> (offset,max : Bits32) -> PrimIO Int32
 
